@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
+  "productName": "tauri-ntex-app",
+  "version": "0.1.0",
+  "identifier": "com.tauri-ntex.app",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "title": "Tauri + ntex",
+        "width": 800,
+        "height": 600,
+        "devtools": true
+      }
+    ]
+  }
+}

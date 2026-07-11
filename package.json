@@ -1,0 +1,7 @@
+{
+  "name": "tauri-ntex-app",
+  "version": "0.1.0",
+  "scripts": {
+    "tauri": "tauri"
+  }
+}

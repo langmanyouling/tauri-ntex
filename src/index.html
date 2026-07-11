@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tauri + ntex</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #e94560, #0f3460);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      color: #888;
+      margin-bottom: 32px;
+      font-size: 0.95rem;
+    }
+    .status-card {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 24px 32px;
+      margin-bottom: 24px;
+      border: 1px solid #0f3460;
+    }
+    .status-label {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .status-value {
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+    .status-value.running { color: #4ade80; }
+    .status-value.stopped { color: #f87171; }
+    .status-value.starting { color: #fbbf24; }
+    .status-value.stopping { color: #fb923c; }
+
+    .port-info {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    button {
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 12px 32px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #start-btn {
+      background: #4ade80;
+      color: #1a1a2e;
+    }
+    #start-btn:hover:not(:disabled) {
+      background: #22c55e;
+    }
+    #stop-btn {
+      background: #f87171;
+      color: #1a1a2e;
+    }
+    #stop-btn:hover:not(:disabled) {
+      background: #ef4444;
+    }
+    .log-box {
+      margin-top: 24px;
+      background: #0f0f23;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #6ee7b7;
+      border: 1px solid #1e293b;
+    }
+    .log-entry {
+      margin-bottom: 4px;
+    }
+    .log-entry.error { color: #f87171; }
+    .log-entry.info { color: #93c5fd; }
+    .log-entry.warn { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tauri + ntex</h1>
+    <p class="subtitle">Rust 全栈桌面应用 — 内嵌 HTTP 服务器</p>
+
+    <div class="status-card">
+      <div class="status-label">服务器状态</div>
+      <div id="status" class="status-value stopped">已停止</div>
+      <div id="port-info" class="port-info"></div>
+    </div>
+
+    <div class="btn-group">
+      <button id="start-btn" onclick="startServer()">启动服务</button>
+      <button id="stop-btn" onclick="stopServer()" disabled>停止服务</button>
+    </div>
+
+    <div class="log-box" id="log-box">
+      <div class="log-entry info">[系统] 就绪，等待操作...</div>
+    </div>
+  </div>
+
+  <script>
+    let invoke;
+    if (window.__TAURI__ && window.__TAURI__.core) {
+      invoke = window.__TAURI__.core.invoke;
+    } else if (window.__TAURI__) {
+      invoke = window.__TAURI__.invoke;
+    }
+
+    const statusEl = document.getElementById('status');
+    const portInfoEl = document.getElementById('port-info');
+    const startBtn = document.getElementById('start-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const logBox = document.getElementById('log-box');
+
+    function appendLog(msg, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = msg;
+      logBox.appendChild(entry);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function setStatus(state, text) {
+      statusEl.className = `status-value ${state}`;
+      statusEl.textContent = text;
+    }
+
+    async function startServer() {
+      try {
+        startBtn.disabled = true;
+        setStatus('starting', '启动中...');
+        appendLog('[操作] 正在启动 ntex 服务器...', 'info');
+
+        const result = await invoke('start_ntex_server');
+        appendLog(`[成功] ${result}`, 'info');
+        setStatus('running', '运行中');
+        portInfoEl.textContent = 'http://127.0.0.1:9000';
+        stopBtn.disabled = false;
+      } catch (err) {
+        appendLog(`[错误] ${err}`, 'error');
+        setStatus('stopped', '启动失败');
+        startBtn.disabled = false;
+      }
+    }
+
+    async function stopServer() {
+      try {
+        stopBtn.disabled = true;
+        setStatus('stopping', '停止中...');
+        appendLog('[操作] 正在停止 ntex 服务器...', 'warn');
+
+        const result = await invoke('stop_ntex_server');
+        appendLog(`[成功] ${result}`, 'info');
+        setStatus('stopped', '已停止');
+        portInfoEl.textContent = '';
+        startBtn.disabled = false;
+      } catch (err) {
+        appendLog(`[错误] ${err}`, 'error');
+        setStatus('running', '停止失败');
+        stopBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

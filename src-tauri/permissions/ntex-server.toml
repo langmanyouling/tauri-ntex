@@ -1,0 +1,9 @@
+[[permission]]
+identifier = "allow-start-ntex-server"
+description = "允许启动 ntex web 服务器"
+commands.allow = ["start_ntex_server"]
+
+[[permission]]
+identifier = "allow-stop-ntex-server"
+description = "允许停止 ntex web 服务器"
+commands.allow = ["stop_ntex_server"]
